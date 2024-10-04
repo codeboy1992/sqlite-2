@@ -1,0 +1,10 @@
+# Ignorer l'environnement virtuel
+venv/
+
+# Fichiers générés par Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Fichiers de configuration de PyCharm
+.idea/
