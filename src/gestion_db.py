@@ -1,51 +1,73 @@
 import sqlite3
+import csv
 
-# Connexion à la base de données SQLite
+# Connexion à la base de données
 connexion = sqlite3.connect('simplon-sqlite-2.db')
 curseur = connexion.cursor()
 
-# Exemple 1: Les clients ayant consenti à recevoir des communications marketing
-curseur.execute("SELECT * FROM Clients WHERE consentement_marketing = 1")
-clients_consentants = curseur.fetchall()
-print("Clients ayant consenti à recevoir des communications marketing:")
-for client in clients_consentants:
+# Création de la table Clients (si elle n'existe pas déjà)
+curseur.execute('''
+CREATE TABLE IF NOT EXISTS Clients (
+    client_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom TEXT NOT NULL,
+    prenom TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    telephone TEXT,
+    date_naissance DATE,
+    adresse TEXT,
+    consentement_marketing BOOLEAN NOT NULL
+);
+''')
+
+# Création de la table Commandes
+curseur.execute('''
+CREATE TABLE IF NOT EXISTS Commandes (
+    commande_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id INTEGER,
+    produit TEXT,
+    montant REAL,
+    date_commande TEXT,
+    FOREIGN KEY (client_id) REFERENCES Clients(client_id)
+);
+''')
+
+# Importer les données du fichier CSV Clients
+with open('C:/Users/yohan/sqlite-2/data/jeu-de-donnees-clients-66fed38c68779376654152.csv', newline='', encoding='utf-8') as fichier_csv:
+    lecteur_csv = csv.reader(fichier_csv)
+    next(lecteur_csv)  # Sauter l'en-tête
+    for ligne in lecteur_csv:
+        # Vérifier si l'email existe déjà
+        curseur.execute('SELECT * FROM Clients WHERE email = ?', (ligne[3],))
+        result = curseur.fetchone()
+
+        # Si l'email n'existe pas, insérer
+        if result is None:
+            curseur.execute('INSERT INTO Clients (nom, prenom, email, consentement_marketing) VALUES (?, ?, ?, ?)', ligne[1:5])
+        else:
+            print(f"L'email {ligne[3]} existe déjà.")
+
+# Importer les données du fichier CSV Commandes
+with open('C:/Users/yohan/sqlite-2/data/jeu-de-donnees-commandes-66fe65226fdb5678959707.csv', newline='', encoding='utf-8') as fichier_csv:
+    lecteur_csv = csv.reader(fichier_csv)
+    next(lecteur_csv)  # Sauter l'en-tête
+    for ligne in lecteur_csv:
+        curseur.execute('INSERT INTO Commandes (client_id, produit, montant, date_commande) VALUES (?, ?, ?, ?)', ligne)
+
+# Sauvegarder les modifications dans la base de données
+connexion.commit()
+
+# Vérification après insertion
+curseur.execute("SELECT * FROM Clients")
+clients = curseur.fetchall()
+print("Clients insérés :")
+for client in clients:
     print(client)
 
-# Exemple 2: Les commandes d'un client spécifique (par exemple client_id = 5)
-curseur.execute("SELECT * FROM Commandes WHERE client_id = 5")
-commandes_client = curseur.fetchall()
-print("\nCommandes du client avec l'ID 5:")
-for commande in commandes_client:
+curseur.execute("SELECT * FROM Commandes")
+commandes = curseur.fetchall()
+print("Commandes insérées :")
+for commande in commandes:
     print(commande)
 
-# Exemple 3: Le montant total des commandes du client avec l'ID 61
-curseur.execute("SELECT SUM(montant) FROM Commandes WHERE client_id = 61")
-montant_total = curseur.fetchone()[0]
-print(f"\nMontant total des commandes du client avec ID 61: {montant_total} euros")
-
-# Exemple 4: Les clients ayant passé des commandes de plus de 100 euros
-curseur.execute('''
-    SELECT DISTINCT Clients.*
-    FROM Clients
-    JOIN Commandes ON Clients.client_id = Commandes.client_id
-    WHERE Commandes.montant > 100
-''')
-clients_100 = curseur.fetchall()
-print("\nClients ayant passé des commandes de plus de 100 euros:")
-for client in clients_100:
-    print(client)
-
-# Exemple 5: Les clients ayant passé des commandes après le 01/01/2023
-curseur.execute('''
-    SELECT DISTINCT Clients.*
-    FROM Clients
-    JOIN Commandes ON Clients.client_id = Commandes.client_id
-    WHERE Commandes.date_commande > '2023-01-01'
-''')
-clients_apres_2023 = curseur.fetchall()
-print("\nClients ayant passé des commandes après le 01/01/2023:")
-for client in clients_apres_2023:
-    print(client)
-
-# Fermer la connexion à la base de données
+# Fermer la connexion
 connexion.close()
