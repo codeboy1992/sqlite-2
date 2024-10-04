@@ -23,12 +23,13 @@ CREATE TABLE IF NOT EXISTS Clients (
 curseur.execute('''
 CREATE TABLE IF NOT EXISTS Commandes (
     commande_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    client_id INTEGER,
-    produit TEXT,
-    montant REAL,
-    date_commande TEXT,
+    client_id INTEGER NOT NULL,
+    produit TEXT NOT NULL,
+    montant REAL NOT NULL,
+    date_commande TEXT NOT NULL,
     FOREIGN KEY (client_id) REFERENCES Clients(client_id)
 );
+
 ''')
 
 # Importer les données du fichier CSV Clients
